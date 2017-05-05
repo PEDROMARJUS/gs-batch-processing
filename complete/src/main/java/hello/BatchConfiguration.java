@@ -23,6 +23,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 @Configuration
 @EnableBatchProcessing
+//Se prepara el trabajo por lotes
 public class BatchConfiguration {
 
     @Autowired
@@ -36,26 +37,30 @@ public class BatchConfiguration {
 
     // tag::readerwriterprocessor[]
     @Bean
-    public FlatFileItemReader<Person> reader() {
-        FlatFileItemReader<Person> reader = new FlatFileItemReader<Person>();
+    //Se define la entrada
+    public FlatFileItemReader<Persona> reader() {
+        FlatFileItemReader<Persona> reader = new FlatFileItemReader<Persona>();
+        //Archivo de origen de datos (en .csv cada fila contiene los campos separados por el delimitador definido)
         reader.setResource(new ClassPathResource("sample-data.csv"));
-        reader.setLineMapper(new DefaultLineMapper<Person>() {{
+        reader.setLineMapper(new DefaultLineMapper<Persona>() {{
             setLineTokenizer(new DelimitedLineTokenizer() {{
-                setNames(new String[] { "firstName", "lastName" });
+                setNames(new String[] { "nombre", "apellido1", "apellido2" });
             }});
-            setFieldSetMapper(new BeanWrapperFieldSetMapper<Person>() {{
-                setTargetType(Person.class);
+            setFieldSetMapper(new BeanWrapperFieldSetMapper<Persona>() {{
+                setTargetType(Persona.class);
             }});
         }});
         return reader;
     }
 
     @Bean
-    public PersonItemProcessor processor() {
-        return new PersonItemProcessor();
+    public PersonaItemProcessor processor() {
+        return new PersonaItemProcessor();
     }
 
+    //Se define la salida
     @Bean
+    /*
     public JdbcBatchItemWriter<Person> writer() {
         JdbcBatchItemWriter<Person> writer = new JdbcBatchItemWriter<Person>();
         writer.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<Person>());
@@ -63,10 +68,19 @@ public class BatchConfiguration {
         writer.setDataSource(dataSource);
         return writer;
     }
+    */
+    public JdbcBatchItemWriter<Persona> writer() {
+        JdbcBatchItemWriter<Persona> writer = new JdbcBatchItemWriter<Persona>();
+        writer.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<Persona>());
+        writer.setSql("INSERT INTO pruuser (nombre, apellido1, apellido2) VALUES (:nombre, :apellido1, :apellido2)");
+        writer.setDataSource(dataSource);
+        return writer;
+    }
     // end::readerwriterprocessor[]
 
     // tag::jobstep[]
     @Bean
+    //Definimos el trabajo, y los pasos que lo componen
     public Job importUserJob(JobCompletionNotificationListener listener) {
         return jobBuilderFactory.get("importUserJob")
                 .incrementer(new RunIdIncrementer())
@@ -77,9 +91,14 @@ public class BatchConfiguration {
     }
 
     @Bean
+    //En chunk se define la cantidad de datos que se escriben a la vez
+    //Cada paso puede involucrar a un lector, un procesador y un escritor
+    //Chunk () tiene un prefijo <X, Y> porque es un m�todo gen�rico, 
+    // representa los tipos de entrada y salida de cada registro de procesamiento
+    // y se corresponde con ItemReader <X> e ItemWriter <Y>
     public Step step1() {
         return stepBuilderFactory.get("step1")
-                .<Person, Person> chunk(10)
+                .<Persona, Persona> chunk(10)
                 .reader(reader())
                 .processor(processor())
                 .writer(writer())

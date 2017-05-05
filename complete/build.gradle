@@ -4,6 +4,7 @@ buildscript {
     }
     dependencies {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.2.RELEASE")
+        classpath 'mysql:mysql-connector-java:5.1.6'
     }
 }
 
@@ -26,7 +27,10 @@ targetCompatibility = 1.8
 
 dependencies {
     compile("org.springframework.boot:spring-boot-starter-batch")
-    compile("org.hsqldb:hsqldb")
+    compile("mysql:mysql-connector-java:5.1.6")
     testCompile("junit:junit")
 }
 
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.3'
+}

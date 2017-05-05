@@ -28,19 +28,27 @@ public class JobCompletionNotificationListener extends JobExecutionListenerSuppo
 	}
 
 	@Override
+	//Se detecta el final del trabajo y se listan los resultados
 	public void afterJob(JobExecution jobExecution) {
 		if(jobExecution.getStatus() == BatchStatus.COMPLETED) {
 			log.info("!!! JOB FINISHED! Time to verify the results");
 
+			/*
 			List<Person> results = jdbcTemplate.query("SELECT first_name, last_name FROM people", new RowMapper<Person>() {
+			@Override
+			public Person mapRow(ResultSet rs, int row) throws SQLException {
+				return new Person(rs.getString(1), rs.getString(2));
+			}
+			*/
+			List<Persona> results = jdbcTemplate.query("SELECT nombre, apellido1, apellido2 FROM pruuser", new RowMapper<Persona>() {
 				@Override
-				public Person mapRow(ResultSet rs, int row) throws SQLException {
-					return new Person(rs.getString(1), rs.getString(2));
+				public Persona mapRow(ResultSet rs, int row) throws SQLException {
+					return new Persona(rs.getString(1), rs.getString(2), rs.getString(3));
 				}
 			});
 
-			for (Person person : results) {
-				log.info("Found <" + person + "> in the database.");
+			for (Persona persona : results) {
+				log.info("Found <" + persona + "> in the database.");
 			}
 
 		}
